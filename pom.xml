@@ -9,9 +9,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.mycompany</groupId>
-
     <artifactId>sendEmailC14</artifactId>
-
     <version>1.0-SNAPSHOT</version>
 
     <packaging>war</packaging>
@@ -19,145 +17,75 @@
     <name>sendEmailC14</name>
 
     <properties>
-
         <maven.compiler.release>17</maven.compiler.release>
-
-        <project.build.sourceEncoding>
-            UTF-8
-        </project.build.sourceEncoding>
-
-        <failOnMissingWebXml>
-            false
-        </failOnMissingWebXml>
-
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <failOnMissingWebXml>false</failOnMissingWebXml>
     </properties>
-
 
     <dependencies>
 
-        <!-- Servlet API - Tomcat 9 -->
-
+        <!-- Servlet -->
         <dependency>
-
             <groupId>javax.servlet</groupId>
-
             <artifactId>javax.servlet-api</artifactId>
-
             <version>4.0.1</version>
-
             <scope>provided</scope>
-
         </dependency>
 
-
-        <!-- JPA API -->
-
+        <!-- JPA -->
         <dependency>
-
             <groupId>javax.persistence</groupId>
-
             <artifactId>javax.persistence-api</artifactId>
-
             <version>2.2</version>
-
         </dependency>
-
 
         <!-- EclipseLink -->
-
         <dependency>
-
             <groupId>org.eclipse.persistence</groupId>
-
             <artifactId>eclipselink</artifactId>
-
             <version>2.7.16</version>
-
         </dependency>
-
 
         <!-- MySQL -->
-
         <dependency>
-
             <groupId>com.mysql</groupId>
-
             <artifactId>mysql-connector-j</artifactId>
-
             <version>9.4.0</version>
-
         </dependency>
-
 
         <!-- JavaMail -->
-
         <dependency>
-
             <groupId>com.sun.mail</groupId>
-
             <artifactId>javax.mail</artifactId>
-
             <version>1.6.2</version>
-
-        </dependency>
-        <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>4.12.0</version>
         </dependency>
 
     </dependencies>
-
 
     <build>
 
         <plugins>
 
-            <!-- Java compiler -->
-
+            <!-- Compiler -->
             <plugin>
-
-                <groupId>
-                    org.apache.maven.plugins
-                </groupId>
-
-                <artifactId>
-                    maven-compiler-plugin
-                </artifactId>
-
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
 
                 <configuration>
-
                     <release>17</release>
-
                 </configuration>
-
             </plugin>
 
-
             <!-- WAR -->
-
             <plugin>
-
-                <groupId>
-                    org.apache.maven.plugins
-                </groupId>
-
-                <artifactId>
-                    maven-war-plugin
-                </artifactId>
-
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
                 <version>3.4.0</version>
 
                 <configuration>
-
-                    <failOnMissingWebXml>
-                        false
-                    </failOnMissingWebXml>
-
+                    <failOnMissingWebXml>false</failOnMissingWebXml>
                 </configuration>
-
             </plugin>
 
         </plugins>

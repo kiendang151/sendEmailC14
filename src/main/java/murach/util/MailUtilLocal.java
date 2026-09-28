@@ -1,14 +1,16 @@
 package murach.util;
 
-import java.io.IOException;
+import java.util.Properties;
 
+import javax.mail.Address;
+import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.Transport;
 
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 
 public class MailUtilLocal {
 
@@ -20,115 +22,98 @@ public class MailUtilLocal {
             boolean bodyIsHTML)
             throws MessagingException {
 
-        // Lấy Resend API Key từ Environment Variable
-        String apiKey = System.getenv("RESEND_API_KEY");
+        // 1 - get a mail session
 
-        if (apiKey == null || apiKey.isBlank()) {
-            throw new MessagingException(
-                    "RESEND_API_KEY chưa được cấu hình"
-            );
-        }
+        Properties props = new Properties();
 
-        /*
-         * Resend yêu cầu địa chỉ From hợp lệ.
-         * Khi đang test với tài khoản mới, dùng địa chỉ onboarding
-         * của Resend.
-         */
-        String resendFrom = "onboarding@resend.dev";
+        props.put(
+                "mail.transport.protocol",
+                "smtp"
+        );
 
-        // Nếu body là HTML thì gửi vào trường html
-        // Nếu là text thường thì chuyển thành HTML đơn giản
-        String htmlBody;
+        props.put(
+                "mail.smtp.host",
+                "smtp.gmail.com"
+        );
+
+        props.put(
+                "mail.smtp.port",
+                "587"
+        );
+
+        props.put(
+                "mail.smtp.auth",
+                "true"
+        );
+
+        props.put(
+                "mail.smtp.starttls.enable",
+                "true"
+        );
+
+        // Gmail của bạn
+        final String username =
+                "kiendang151@gmail.com";
+
+        // App Password của Gmail
+        final String password =
+                "gqgo sfdk pwql jzwa";
+
+        Session session =
+                Session.getInstance(
+                        props,
+                        new javax.mail.Authenticator() {
+
+                            @Override
+                            protected PasswordAuthentication
+                                    getPasswordAuthentication() {
+
+                                return new PasswordAuthentication(
+                                        username,
+                                        password
+                                );
+                            }
+                        }
+                );
+
+        session.setDebug(true);
+
+        // 2 - create a message
+
+        Message message =
+                new MimeMessage(session);
+
+        message.setSubject(subject);
 
         if (bodyIsHTML) {
-            htmlBody = body;
+
+            message.setContent(
+                    body,
+                    "text/html"
+            );
+
         } else {
-            htmlBody = body
-                    .replace("&", "&amp;")
-                    .replace("<", "&lt;")
-                    .replace(">", "&gt;")
-                    .replace("\n", "<br>");
+
+            message.setText(body);
         }
 
-        // Escape JSON
-        String jsonBody = "{"
-                + "\"from\":\"" + escapeJson(resendFrom) + "\","
-                + "\"to\":[\"" + escapeJson(to) + "\"],"
-                + "\"subject\":\"" + escapeJson(subject) + "\","
-                + "\"html\":\"" + escapeJson(htmlBody) + "\""
-                + "}";
+        // 3 - address the message
 
-        OkHttpClient client = new OkHttpClient();
+        Address fromAddress =
+                new InternetAddress(from);
 
-        MediaType mediaType =
-                MediaType.parse("application/json");
+        Address toAddress =
+                new InternetAddress(to);
 
-        RequestBody requestBody =
-                RequestBody.create(
-                        jsonBody,
-                        mediaType
-                );
+        message.setFrom(fromAddress);
 
-        Request request =
-                new Request.Builder()
-                        .url("https://api.resend.com/emails")
-                        .addHeader(
-                                "Authorization",
-                                "Bearer " + apiKey
-                        )
-                        .addHeader(
-                                "Content-Type",
-                                "application/json"
-                        )
-                        .post(requestBody)
-                        .build();
+        message.setRecipient(
+                Message.RecipientType.TO,
+                toAddress
+        );
 
-        try (Response response = client.newCall(request).execute()) {
+        // 4 - send the message
 
-            String responseBody =
-                    response.body() != null
-                            ? response.body().string()
-                            : "";
-
-            System.out.println(
-                    "Resend HTTP status: "
-                    + response.code()
-            );
-
-            System.out.println(
-                    "Resend response: "
-                    + responseBody
-            );
-
-            if (!response.isSuccessful()) {
-                throw new MessagingException(
-                        "Resend gửi email thất bại. HTTP "
-                        + response.code()
-                        + ": "
-                        + responseBody
-                );
-            }
-        } catch (IOException e) {
-
-            throw new MessagingException(
-                    "Không thể kết nối Resend API: "
-                    + e.getMessage(),
-                    e
-            );
-        }
-    }
-
-    private static String escapeJson(String value) {
-
-        if (value == null) {
-            return "";
-        }
-
-        return value
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\r", "\\r")
-                .replace("\n", "\\n")
-                .replace("\t", "\\t");
+        Transport.send(message);
     }
 }
