@@ -1,16 +1,14 @@
 package murach.util;
 
-import java.util.Properties;
+import java.io.IOException;
 
-import javax.mail.Address;
-import javax.mail.Message;
 import javax.mail.MessagingException;
-import javax.mail.PasswordAuthentication;
-import javax.mail.Session;
-import javax.mail.Transport;
 
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class MailUtilLocal {
 
@@ -22,105 +20,115 @@ public class MailUtilLocal {
             boolean bodyIsHTML)
             throws MessagingException {
 
-        // 1 - get a mail session
-        Properties props = new Properties();
+        // Lấy Resend API Key từ Environment Variable
+        String apiKey = System.getenv("RESEND_API_KEY");
 
-        props.put(
-                "mail.transport.protocol",
-                "smtp"
-        );
-
-        props.put(
-                "mail.smtp.host",
-                "smtp.gmail.com"
-        );
-
-        props.put(
-                "mail.smtp.port",
-                "587"
-        );
-
-        props.put(
-                "mail.smtp.auth",
-                "true"
-        );
-
-        props.put(
-                "mail.smtp.starttls.enable",
-                "true"
-        );
-
-        final String username = System.getenv("GMAIL_USERNAME");
-        final String password = System.getenv("GMAIL_PASSWORD");
-        
-        Session session =
-                Session.getInstance(
-                        props,
-                        new javax.mail.Authenticator() {
-
-                            @Override
-                            protected PasswordAuthentication
-                                    getPasswordAuthentication() {
-
-                                return new PasswordAuthentication(
-                                        username,
-                                        password
-                                );
-                            }
-                        }
-                );
-
-        session.setDebug(true);
-
-        // 2 - create a message
-        Message message =
-                new MimeMessage(session);
-
-        message.setSubject(subject);
-
-        if (bodyIsHTML) {
-
-            message.setContent(
-                    body,
-                    "text/html"
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new MessagingException(
+                    "RESEND_API_KEY chưa được cấu hình"
             );
-
-        } else {
-
-            message.setText(body);
         }
 
-        // 3 - address the message
-        Address fromAddress =
-                new InternetAddress(from);
+        /*
+         * Resend yêu cầu địa chỉ From hợp lệ.
+         * Khi đang test với tài khoản mới, dùng địa chỉ onboarding
+         * của Resend.
+         */
+        String resendFrom = "onboarding@resend.dev";
 
-        Address toAddress =
-                new InternetAddress(to);
+        // Nếu body là HTML thì gửi vào trường html
+        // Nếu là text thường thì chuyển thành HTML đơn giản
+        String htmlBody;
 
-        message.setFrom(fromAddress);
+        if (bodyIsHTML) {
+            htmlBody = body;
+        } else {
+            htmlBody = body
+                    .replace("&", "&amp;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
+                    .replace("\n", "<br>");
+        }
 
-        message.setRecipient(
-                Message.RecipientType.TO,
-                toAddress
-        );
+        // Escape JSON
+        String jsonBody = "{"
+                + "\"from\":\"" + escapeJson(resendFrom) + "\","
+                + "\"to\":[\"" + escapeJson(to) + "\"],"
+                + "\"subject\":\"" + escapeJson(subject) + "\","
+                + "\"html\":\"" + escapeJson(htmlBody) + "\""
+                + "}";
 
-        // 4 - send the message
-        Transport transport = session.getTransport("smtp");
+        OkHttpClient client = new OkHttpClient();
 
-        transport.connect(
-                "smtp.gmail.com",
-                587,
-                username,
-                password
-        );
+        MediaType mediaType =
+                MediaType.parse("application/json");
 
-        transport.sendMessage(
-                message,
-                message.getAllRecipients()
-        );
+        RequestBody requestBody =
+                RequestBody.create(
+                        jsonBody,
+                        mediaType
+                );
 
-        transport.close();
+        Request request =
+                new Request.Builder()
+                        .url("https://api.resend.com/emails")
+                        .addHeader(
+                                "Authorization",
+                                "Bearer " + apiKey
+                        )
+                        .addHeader(
+                                "Content-Type",
+                                "application/json"
+                        )
+                        .post(requestBody)
+                        .build();
+
+        try (Response response = client.newCall(request).execute()) {
+
+            String responseBody =
+                    response.body() != null
+                            ? response.body().string()
+                            : "";
+
+            System.out.println(
+                    "Resend HTTP status: "
+                    + response.code()
+            );
+
+            System.out.println(
+                    "Resend response: "
+                    + responseBody
+            );
+
+            if (!response.isSuccessful()) {
+                throw new MessagingException(
+                        "Resend gửi email thất bại. HTTP "
+                        + response.code()
+                        + ": "
+                        + responseBody
+                );
+            }
+        } catch (IOException e) {
+
+            throw new MessagingException(
+                    "Không thể kết nối Resend API: "
+                    + e.getMessage(),
+                    e
+            );
+        }
+    }
+
+    private static String escapeJson(String value) {
+
+        if (value == null) {
+            return "";
+        }
+
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\r", "\\r")
+                .replace("\n", "\\n")
+                .replace("\t", "\\t");
     }
 }
-
-
