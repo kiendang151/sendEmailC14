@@ -50,9 +50,9 @@ public class MailUtilLocal {
                 "true"
         );
 
-        final String username = "kiendang151@gmail.com";
-        final String password = "mcdc xuga gnwp kccn";
-
+        final String username = System.getenv("GMAIL_USERNAME");
+        final String password = System.getenv("GMAIL_PASSWORD");
+        
         Session session =
                 Session.getInstance(
                         props,
@@ -105,6 +105,22 @@ public class MailUtilLocal {
         );
 
         // 4 - send the message
-        Transport.send(message);
+        Transport transport = session.getTransport("smtp");
+
+        transport.connect(
+                "smtp.gmail.com",
+                587,
+                username,
+                password
+        );
+
+        transport.sendMessage(
+                message,
+                message.getAllRecipients()
+        );
+
+        transport.close();
     }
 }
+
+

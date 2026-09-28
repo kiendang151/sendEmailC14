@@ -137,9 +137,7 @@ public class EmailListServlet
                         email;
 
 
-                String from =
-                        "email_list@murach.com";
-
+                String from = System.getenv("GMAIL_USERNAME");
 
                 String subject =
                         "Welcome to our email list";
