@@ -21,15 +21,15 @@
 
             <property
                 name="javax.persistence.jdbc.url"
-                value="jdbc:mysql://localhost:3306/emaillist?useSSL=false&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC"/>
+                value="jdbc:mysql://mysql-emaillist-kiendang151-6380.e.aivencloud.com:11503/emaillist?sslMode=REQUIRED&amp;serverTimezone=UTC"/>
 
             <property
                 name="javax.persistence.jdbc.user"
-                value="root"/>
+                value="avnadmin"/>
 
             <property
                 name="javax.persistence.jdbc.password"
-                value="123456"/>
+                value="AVNS_ZaZKBJ7Vml8nNC2OkeG"/>
 
             <property
                 name="javax.persistence.jdbc.driver"
